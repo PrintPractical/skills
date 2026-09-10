@@ -102,8 +102,10 @@ commits, deployment, dependency additions, or other actions requiring user appro
 
 - Preserve DDD/hexagonal ownership without generating an interface or runtime hop
   for each logical boundary. Runtime detail remains part of architecture guidance.
-- Required layouts apply to real application responsibilities, even in small
-  programs; omit empty scaffolding. Specialized layouts require explicit approval.
+- Mixed-responsibility applications use explicit architectural role directories even
+  when small. A package dedicated to one role treats its root as that boundary and
+  omits redundant paths such as `src/domain/`. Omit empty scaffolding; specialized
+  layouts outside the mixed/focused shapes require explicit approval.
 - Refactor ownership necessary for the requested change, not unrelated legacy code.
   Material scope expansion requires approval through the existing process.
 - Rust core independence means no concrete infrastructure coupling, not no supporting

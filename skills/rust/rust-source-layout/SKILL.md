@@ -12,21 +12,27 @@ gap before making the affected decision. This skill specifies paths, not a workf
 
 ## Applicability
 
-For new application crates, and when establishing the first substantial feature in
-an existing crate, use this layout for domain rules, application workflows, or
-infrastructure integrations unless the user explicitly approves another layout.
-Small size alone is not an exemption: a small CLI with domain behavior still
-separates that behavior from argument decoding and output formatting.
+For new crates, and when establishing the first substantial feature in an existing
+crate, first identify the crate's architectural scope. A crate spanning domain,
+application, and adapter responsibilities uses explicit role directories. A crate
+dedicated to one role treats its crate root as that boundary and does not repeat the
+role in its paths. For example, a domain-only crate uses `src/<domain_concept>/`, not
+`src/domain/<domain_concept>/`.
+
+Small size alone is not an exemption from separating distinct responsibilities: a
+small mixed-responsibility CLI still separates domain behavior from argument decoding
+and output formatting. Conversely, a focused crate does not add empty or redundant
+layer directories merely to resemble an application crate.
 
 Create only directories/components needed by actual responsibilities, not empty
-layers or placeholder ports. Specialized crates such as procedural macros, bindings,
-or focused low-level libraries may need another layout: identify their role and
-obtain approval for a concrete alternative before departing from this structure.
+layers or placeholder ports. Procedural macros, bindings, and other specialized
+crates may need another layout: identify their role and obtain approval for a concrete
+alternative when neither the mixed-role nor focused-role shape below fits.
 
 In established projects apply ownership rules to affected behavior; do not migrate
 unrelated modules. Necessary broader restructuring must be included in approved scope.
 
-## Required Layout
+## Mixed-Responsibility Application Crate
 
 ```text
 src/
@@ -73,6 +79,53 @@ For multiple binaries or larger wiring needs, name an outer composition module i
 the design and keep each entry point thin. Do not hide infrastructure construction
 inside application modules to shorten the composition entry point.
 
+## Focused Crates
+
+When a crate contains only one architectural category, omit that category's wrapper
+directory because the crate itself establishes the boundary. Organize its root by
+cohesive concepts or responsibilities:
+
+```text
+# Domain-only crate
+src/
+  <domain_concept>/
+    mod.rs
+    <cohesive_module>.rs
+  lib.rs
+
+# Application-only crate
+src/
+  use_cases/
+    mod.rs
+    <use_case>.rs
+  ports/
+    mod.rs
+    <capability>.rs
+  lib.rs
+
+# Adapter-only crate
+src/
+  inbound/
+    mod.rs
+    <transport>.rs
+  outbound/
+    mod.rs
+    <technology>.rs
+  lib.rs
+```
+
+These are examples of role-focused roots, not a requirement to create every shown
+subdirectory. A crate containing one cohesive domain concept may put named modules
+directly under `src/`; it does not need both `src/domain/` and another concept wrapper.
+An adapter crate dedicated to one integration may likewise organize directly around
+that integration rather than adding a redundant `outbound/` directory.
+
+Crate boundaries must provide real cohesion and dependency direction, not merely
+move folders into workspace members. Do not split every concept, use case, port, or
+adapter into its own crate mechanically. If a focused crate later gains another
+architectural role, introduce explicit role boundaries or split responsibilities as
+the change requires instead of allowing its root to become ambiguous.
+
 ## Dependency Direction
 
 Domain may depend on domain code, the standard library, and approved
@@ -87,6 +140,8 @@ on application/domain plus the technologies they implement. The location of
 Use visibility such as private modules and `pub(crate)` intentionally. Do not expose
 every internal type through `lib.rs` just because it exists. If architecture is split
 across crates, preserve the same direction in manifest dependencies and public APIs.
+A focused crate's role follows from its declared scope and contracts, not from
+requiring a redundant directory name.
 
 ## Planning and Review
 
@@ -94,17 +149,20 @@ Before implementation, name concrete module paths for every significant owner.
 A plan missing placement of domain behavior, use cases, ports, or adapters that the
 change requires is incomplete; revise it or obtain explicit approval for an alternative.
 
-Do not place domain definitions in `domain/mod.rs`, combine layers in one source file
-to reduce file count, or create generic `models.rs`, `services.rs`, and `utils.rs`
-containers for independently describable responsibilities.
+In a mixed-role crate, do not place substantive domain definitions in `domain/mod.rs`.
+In a focused crate, keep `lib.rs` and namespace `mod.rs` files thin. Do not combine
+distinct responsibilities in one source file to reduce file count, or create generic
+`models.rs`, `services.rs`, and `utils.rs` containers for independently describable
+responsibilities.
 
 For an IDL domain, parsing, model, name resolution, validation, and formatting may
 have distinct owners when independently meaningful. They are not automatically
 infrastructure merely because they involve text.
 
-Example: put a routing policy in `domain/routing/policy.rs`, its resolution workflow
-in `app/use_cases/resolve_route.rs`, and HTTP translation in `adapters/inbound/http.rs`.
-Do not create a second policy inside a new CLI adapter.
+Example: in a mixed crate, put a routing policy in `domain/routing/policy.rs`, its
+workflow in `app/use_cases/resolve_route.rs`, and HTTP translation in
+`adapters/inbound/http.rs`. In a domain-only crate, the same policy belongs at
+`routing/policy.rs`. Do not create a second policy inside a new CLI adapter.
 
 Review actual definitions/imports and public contracts, not just directory names.
 Use compiler/module-aware checks where available; a passing text search does not

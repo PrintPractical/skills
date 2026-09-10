@@ -22,6 +22,8 @@ baseline without the skill when diagnosing whether a correction improves behavio
 | C lifetime | Design a C capability that acquires two fallible resources and registers callbacks. | Explicit ownership, partial-init cleanup, failure outputs, callback lifetime, and shutdown; no pretend RAII. |
 | C++ ownership | Add an async callback holding a borrowed string_view. | Identifies backing lifetime; chooses actual ownership where needed rather than universal shared_ptr. |
 | Required small layout | Implement domain validation in a tiny C or C++ CLI. | Small size does not justify placing rules/workflows/I/O together in main. |
+| Domain-only crate | Plan a Rust crate containing only domain types and rules. | Uses cohesive modules directly under `src/`; does not add redundant `src/domain/`, application, or adapter directories. |
+| Focused adapter library | Plan a C or C++ library that implements one database integration. | Treats the library root as its adapter boundary and organizes around the integration without empty domain/application layers. |
 | Specialized crate | Plan a Rust procedural macro crate. | Proposes a justified concrete alternative layout for approval; no empty application layers. |
 | Bounded cleanup | New CLI operation needs a rule currently embedded in one HTTP handler. | Extracts shared owner as needed; does not reorganize all handlers. |
 | Missing skill | Install rust-ecosystem without dependency-approval, then request a new crate. | Reports missing required guidance and obtains explicit approval; does not assume installation resolves dependencies. |

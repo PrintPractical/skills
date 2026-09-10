@@ -1,6 +1,6 @@
 ---
 name: c-source-layout
-description: Use when designing, planning, implementing, or reviewing C application source layout, header placement, module ownership, ports, adapters, or dependency boundaries; requires concrete paths before implementation and bounded architectural structure.
+description: Use when designing, planning, implementing, or reviewing C application or library source layout, header placement, module ownership, ports, adapters, or dependency boundaries; supports mixed-role applications and focused-role libraries with concrete paths.
 user-invocable: false
 ---
 
@@ -9,13 +9,17 @@ user-invocable: false
 ## Scope
 
 - Apply to C, not to C++ code compiled alongside it.
-- Application projects with domain behavior, workflows, or integrations require
-  the domain/app/ports/adapters structure below for those responsibilities.
-- Apply when creating an application or establishing its first substantial feature.
+- Mixed-responsibility applications with domain behavior, workflows, and integrations
+  use the domain/app/ports/adapters structure below for those responsibilities.
+- A library dedicated to one architectural role treats its include/source root as
+  that boundary and omits a redundant role directory such as `domain/`.
+- Apply when creating an application or library, or establishing its first substantial
+  feature.
 - Small size, a single executable, or few source files is not an exemption.
 - Create only directories that contain actual code; do not scaffold empty layers.
-- A specialized library, binding, or low-level component may need another shape.
-  Request explicit user approval for a concrete alternative; do not self-exempt.
+- A binding or specialized low-level component may need another shape. Request
+  explicit user approval for a concrete alternative when the mixed or focused shape
+  does not fit; do not self-exempt.
 - For existing code, apply the rules to the work in scope and correct ownership
   problems material to that change. Do not migrate unrelated code.
 - Use `architecture-guidance` for shared architectural decisions when needed.
@@ -23,7 +27,7 @@ user-invocable: false
   seek clarification for unresolved decisions rather than inventing its contents.
 - This skill defines source organization, not an agent workflow or orchestration.
 
-## Required Shape
+## Mixed-Responsibility Application Shape
 
 Paths below are a pattern, not an instruction to create every listed directory.
 Replace placeholders with project, concept, use-case, and capability names.
@@ -46,6 +50,30 @@ tests/
   app/<use_case>_test.c
   adapters/<technology>_test.c
 ```
+
+## Focused Library Shape
+
+When a library contains only one architectural category, omit that category wrapper.
+For example, a domain-only library can use:
+
+```text
+include/<project>/
+  <concept>/<concept>.h
+src/
+  <concept>/<concept>.c
+tests/
+  <concept>_test.c
+```
+
+An application-only library may place `use_cases/` and `ports/` directly under its
+public include and source roots. An adapter-only library may organize directly by
+inbound/outbound responsibilities, or directly by one integration when that is the
+library's sole cohesive purpose. Create only paths required by actual code.
+
+The library boundary must represent real cohesion and dependency direction. Do not
+split every concept or adapter into a library mechanically. If a focused library
+acquires another architectural role, introduce explicit role directories or split
+the responsibilities rather than leaving its root ambiguous.
 
 ## Concrete Placement
 
@@ -72,7 +100,8 @@ src/main.c                                      # wiring and lifetime ownership
 
 ## Ownership and Dependencies
 
-- Domain headers and implementations depend only on domain code and the C
+- Domain headers and implementations, whether under `domain/` in a mixed application
+  or at the root of a domain-only library, depend only on domain code and the C
   standard library, not application code, adapters, OS APIs, or infrastructure.
 - Domain owns rules, invariants, meaningful state, and domain error definitions.
 - Application use cases depend on domain code, application contracts, and the

@@ -1,6 +1,6 @@
 ---
 name: cpp-source-layout
-description: Use when designing, planning, implementing, or reviewing C++ application source layout, header placement, module ownership, ports, adapters, or dependency boundaries; requires concrete paths before implementation and bounded architectural structure.
+description: Use when designing, planning, implementing, or reviewing C++ application or library source layout, header placement, module ownership, ports, adapters, or dependency boundaries; supports mixed-role applications and focused-role libraries with concrete paths.
 user-invocable: false
 ---
 
@@ -8,13 +8,17 @@ user-invocable: false
 
 ## Scope
 
-- Application projects with domain behavior, workflows, or integrations require
-  the domain/app/ports/adapters structure below for those responsibilities.
-- Apply when creating an application or establishing its first substantial feature.
+- Mixed-responsibility applications with domain behavior, workflows, and integrations
+  use the domain/app/ports/adapters structure below for those responsibilities.
+- A library dedicated to one architectural role treats its include/source root as
+  that boundary and omits a redundant role directory such as `domain/`.
+- Apply when creating an application or library, or establishing its first substantial
+  feature.
 - Small size, a single binary, or few classes is not an exemption.
 - Create only directories containing actual code; do not scaffold empty layers.
-- Specialized libraries, bindings, or low-level components may need another layout.
-  Request explicit user approval for a concrete alternative; do not self-exempt.
+- Bindings and specialized low-level components may need another layout. Request
+  explicit user approval for a concrete alternative when the mixed or focused shape
+  does not fit; do not self-exempt.
 - For existing code, apply the rules to work in scope and correct ownership problems
   material to the change. Do not migrate unrelated existing code.
 - Use `architecture-guidance` for shared architectural decisions when needed.
@@ -22,7 +26,7 @@ user-invocable: false
   seek clarification for unresolved decisions rather than inventing its contents.
 - This skill defines source organization, not an agent workflow or orchestration.
 
-## Required Shape
+## Mixed-Responsibility Application Shape
 
 Paths below are a pattern, not an instruction to create every listed directory.
 Replace placeholders with project, concept, use-case, and capability names.
@@ -45,6 +49,30 @@ tests/
   app/<use_case>_test.cpp
   adapters/<technology>_test.cpp
 ```
+
+## Focused Library Shape
+
+When a library contains only one architectural category, omit that category wrapper.
+For example, a domain-only library can use:
+
+```text
+include/<project>/
+  <concept>/<concept>.hpp
+src/
+  <concept>/<concept>.cpp
+tests/
+  <concept>_test.cpp
+```
+
+An application-only library may place `use_cases/` and `ports/` directly under its
+public include and source roots. An adapter-only library may organize directly by
+inbound/outbound responsibilities, or directly by one integration when that is the
+library's sole cohesive purpose. Create only paths required by actual code.
+
+The library boundary must represent real cohesion and dependency direction. Do not
+split every concept or adapter into a library mechanically. If a focused library
+acquires another architectural role, introduce explicit role directories or split
+the responsibilities rather than leaving its root ambiguous.
 
 ## Concrete Placement
 
@@ -71,7 +99,8 @@ src/main.cpp                                     # wiring and resource ownership
 
 ## Ownership and Dependencies
 
-- Domain headers and implementations depend only on domain code and the C++
+- Domain headers and implementations, whether under `domain/` in a mixed application
+  or at the root of a domain-only library, depend only on domain code and the C++
   standard library, never application code, adapters, OS APIs, or infrastructure.
 - Domain owns rules, invariants, meaningful state, values, and domain failures.
 - Application use cases and ports depend on domain code, application contracts,
