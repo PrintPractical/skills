@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const catalog = {
   general: ['architecture-guidance', 'dependency-approval'],
+  'spec-driven-development': ['preserve-implementation-intent'],
   rust: ['rust-source-layout', 'rust-practices', 'rust-ecosystem'],
   c: ['c-source-layout', 'c-practices'],
   cpp: ['cpp-source-layout', 'cpp-practices'],
@@ -20,7 +21,7 @@ test('catalog contains exactly the intended categories and skills', async () => 
     assert.deepEqual((await readdir(path.join(root, 'skills', category))).sort(),
       [...skills].sort());
   }
-  assert.equal(names.size, 9);
+  assert.equal(names.size, 10);
 });
 
 for (const [category, skills] of Object.entries(catalog)) {

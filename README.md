@@ -11,6 +11,7 @@ they do not introduce another specification, approval, or verification lifecycle
 | --- | --- | --- |
 | General | `architecture-guidance` | DDD/hexagonal boundaries, authoritative owners, composition, runtime ownership, and behavioral verification |
 | General | `dependency-approval` | User approval before adding dependencies, independent of language |
+| Spec-Driven Development | `preserve-implementation-intent` | Load before producing assets to preserve exploration details, implementation choices, and consequential uncertainty in OpenSpec or equivalent artifacts |
 | Rust | `rust-source-layout` | Required crate/module placement and concrete ownership paths |
 | Rust | `rust-practices` | Modeling, ownership, traits, errors, async, safety, and tests |
 | Rust | `rust-ecosystem` | Standard-library and established-crate preferences, including Tokio, thiserror, Serde, and parser/formatter selection |
@@ -52,9 +53,10 @@ From this checkout, use `npx skills add . --list` to inspect unpublished changes
 discovers the categorized source tree and handles agent-specific installed paths.
 Do not manually reproduce the nested catalog inside every agent's installed directory.
 
-Category discovery was verified with both `skills@latest` and `skills@1.4.4`, the
-version pinned in the agent-toolkit README: both list all nine skills. Check other
-pinned versions with `--list` before adopting this catalog. Restart OpenCode after
+Category discovery for all ten skills was verified with `skills@1.7.0`. The original
+nine-skill catalog was also verified with `skills@1.4.4`, the version pinned in the
+agent-toolkit README. Check other pinned versions with `--list` before adopting this
+catalog. Restart OpenCode after
 installing or changing skills so discovery uses the new files.
 
 ## Agent Loading
@@ -84,6 +86,9 @@ not an automatically installed instruction file:
   language's source-layout and practices skills.
 - For Rust library/facility choices, load rust-ecosystem.
 - Before proposing or adding a new dependency, load dependency-approval.
+- Before creating or updating OpenSpec or other spec-driven development assets,
+  load preserve-implementation-intent, including for proposals, designs, capability
+  specs, implementation plans, and tasks. Do not defer loading until final review.
 - Apply these skills within the existing workflow. Reassess relevance when scope
   changes and provide required skills/artifacts to reviewers or fresh sessions.
 - If required guidance is missing, report the gap before the affected decision.
@@ -122,7 +127,7 @@ commits, deployment, dependency additions, or other actions requiring user appro
   is not itself sufficient justification for a custom implementation.
 
 `AGENTS_CHRIS.md` is the original source guidance and has been left unchanged. It is
-not a tenth installable skill or a second maintained policy implementation. Do not
+not an installable skill or a second maintained policy implementation. Do not
 load it alongside the extracted catalog as competing instructions: it contains the
 older Rust dependency restriction and dependency-decision protocol.
 
