@@ -11,6 +11,7 @@ they do not introduce another specification, approval, or verification lifecycle
 | --- | --- | --- |
 | General | `architecture-guidance` | DDD/hexagonal boundaries, authoritative owners, composition, runtime ownership, and behavioral verification |
 | General | `dependency-approval` | User approval before adding dependencies, independent of language |
+| General | `dependency-source-research` | Local-first dependency API research using cached source or temporary version-matched upstream checkouts |
 | Spec-Driven Development | `preserve-implementation-intent` | Load before producing assets to preserve exploration details, implementation choices, and consequential uncertainty in OpenSpec or equivalent artifacts |
 | Rust | `rust-source-layout` | Required crate/module placement and concrete ownership paths |
 | Rust | `rust-practices` | Modeling, ownership, traits, errors, async, safety, and tests |
@@ -38,7 +39,7 @@ npx skills add PrintPractical/skills --skill '*' -a opencode
 
 # Install the general and Rust guidance only.
 npx skills add PrintPractical/skills \
-  --skill architecture-guidance dependency-approval \
+  --skill architecture-guidance dependency-approval dependency-source-research \
   rust-source-layout rust-practices rust-ecosystem \
   -a opencode
 ```
@@ -53,7 +54,7 @@ From this checkout, use `npx skills add . --list` to inspect unpublished changes
 discovers the categorized source tree and handles agent-specific installed paths.
 Do not manually reproduce the nested catalog inside every agent's installed directory.
 
-Category discovery for all ten skills was verified with `skills@1.7.0`. The original
+Category discovery for all eleven skills was verified with `skills@1.7.0`. The original
 nine-skill catalog was also verified with `skills@1.4.4`, the version pinned in the
 agent-toolkit README. Check other pinned versions with `--list` before adopting this
 catalog. Restart OpenCode after
@@ -86,6 +87,9 @@ not an automatically installed instruction file:
   language's source-layout and practices skills.
 - For Rust library/facility choices, load rust-ecosystem.
 - Before proposing or adding a new dependency, load dependency-approval.
+- Before researching a dependency's APIs, documentation, or behavior, load
+  dependency-source-research. Prefer cached source or a temporary version-matched
+  upstream checkout over repeated documentation-site fetches.
 - Before creating or updating OpenSpec or other spec-driven development assets,
   load preserve-implementation-intent, including for proposals, designs, capability
   specs, implementation plans, and tasks. Do not defer loading until final review.
@@ -96,7 +100,7 @@ not an automatically installed instruction file:
 ```
 
 Cross-skill references name skills rather than assuming sibling filesystem paths.
-Install the two general skills with each language set. The skill format does not
+Install the general skills with each language set. The skill format does not
 automatically resolve or install these dependencies.
 
 These are instructional policies, not security controls. Use host permissions and
@@ -122,6 +126,10 @@ commits, deployment, dependency additions, or other actions requiring user appro
   authored and does not pretend C has C++ ownership mechanisms.
 - New dependencies need approval. Routine upgrade approval is left to the consuming
   repository's policy; this catalog does not silently establish a blanket rule.
+- Dependency research uses local source and bundled docs first, reusing a matching
+  cache or temporary upstream checkout. Targeted web lookups remain available for
+  missing or live information; research does not authorize dependency installation
+  or execution of third-party code.
 - Mature-library evaluation precedes handrolled commodity functionality. In workflows
   that consider installed dependencies before local code, absence from the manifest
   is not itself sufficient justification for a custom implementation.

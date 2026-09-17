@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const catalog = {
-  general: ['architecture-guidance', 'dependency-approval'],
+  general: ['architecture-guidance', 'dependency-approval', 'dependency-source-research'],
   'spec-driven-development': ['preserve-implementation-intent'],
   rust: ['rust-source-layout', 'rust-practices', 'rust-ecosystem'],
   c: ['c-source-layout', 'c-practices'],
@@ -21,7 +21,7 @@ test('catalog contains exactly the intended categories and skills', async () => 
     assert.deepEqual((await readdir(path.join(root, 'skills', category))).sort(),
       [...skills].sort());
   }
-  assert.equal(names.size, 10);
+  assert.equal(names.size, 11);
 });
 
 for (const [category, skills] of Object.entries(catalog)) {
@@ -56,7 +56,7 @@ for (const [category, skills] of Object.entries(catalog)) {
         assert.ok((await stat(resolved)).isFile(), `missing reference: ${target}`);
       }
       for (const [, reference] of text.matchAll(
-        /`((?:rust|cpp|c)-[a-z-]+|architecture-guidance|dependency-approval)`/g,
+        /`((?:rust|cpp|c)-[a-z-]+|architecture-guidance|dependency-approval|dependency-source-research)`/g,
       )) {
         assert.ok(names.has(reference), `unknown named skill: ${reference}`);
       }
