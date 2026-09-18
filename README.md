@@ -9,17 +9,14 @@ they do not introduce another specification, approval, or verification lifecycle
 
 | Category | Skill | Purpose |
 | --- | --- | --- |
-| General | `architecture-guidance` | DDD/hexagonal boundaries, authoritative owners, composition, runtime ownership, and behavioral verification |
+| General | `architecture-guidance` | DDD/hexagonal boundaries, concrete design defaults, technology ports, traceable flows, runtime ownership, and behavioral verification |
 | General | `dependency-approval` | User approval before adding dependencies, independent of language |
 | General | `dependency-source-research` | Local-first dependency API research using cached source or temporary version-matched upstream checkouts |
 | Spec-Driven Development | `preserve-implementation-intent` | Load before producing assets to preserve exploration details, implementation choices, and consequential uncertainty in OpenSpec or equivalent artifacts |
-| Rust | `rust-source-layout` | Required crate/module placement and concrete ownership paths |
-| Rust | `rust-practices` | Modeling, ownership, traits, errors, async, safety, and tests |
+| Rust | `rust-practices` | Cohesive source organization, modeling, ownership, traits, errors, async, safety, and tests |
 | Rust | `rust-ecosystem` | Standard-library and established-crate preferences, including Tokio, thiserror, Serde, and parser/formatter selection |
-| C | `c-source-layout` | Required C header/source placement and module boundaries |
-| C | `c-practices` | Explicit lifetimes, cleanup, status APIs, bounds safety, callback ports, and tests |
-| C++ | `cpp-source-layout` | Required C++ header/source placement and module boundaries |
-| C++ | `cpp-practices` | Values, RAII, ownership, errors, meaningful interfaces, concurrency, and tests |
+| C | `c-practices` | Cohesive source/header organization, explicit lifetimes, cleanup, status APIs, bounds safety, callback ports, and tests |
+| C++ | `cpp-practices` | Cohesive source/header organization, values, RAII, ownership, errors, meaningful interfaces, concurrency, and tests |
 
 Sources live under `skills/<category>/<skill>/SKILL.md`. Category directories do not
 contain `SKILL.md` files: they are catalog organization, not skills or namespaces.
@@ -40,7 +37,7 @@ npx skills add PrintPractical/skills --skill '*' -a opencode
 # Install the general and Rust guidance only.
 npx skills add PrintPractical/skills \
   --skill architecture-guidance dependency-approval dependency-source-research \
-  rust-source-layout rust-practices rust-ecosystem \
+  rust-practices rust-ecosystem \
   -a opencode
 ```
 
@@ -54,11 +51,20 @@ From this checkout, use `npx skills add . --list` to inspect unpublished changes
 discovers the categorized source tree and handles agent-specific installed paths.
 Do not manually reproduce the nested catalog inside every agent's installed directory.
 
-Category discovery for all eleven skills was verified with `skills@1.7.0`. The original
-nine-skill catalog was also verified with `skills@1.4.4`, the version pinned in the
-agent-toolkit README. Check other pinned versions with `--list` before adopting this
-catalog. Restart OpenCode after
-installing or changing skills so discovery uses the new files.
+The catalog contains eight skills. Check discovery with your installer version using
+`--list` before adopting it. Restart OpenCode after installing or changing skills so
+discovery uses the new files.
+
+### Migrating Existing Installations
+
+The standalone `rust-source-layout`, `c-source-layout`, and `cpp-source-layout` skills
+are retired. Their useful language-specific guidance now lives in each language's
+practices skill and its bundled `references/source-organization.md`. Update explicit
+install lists and consuming `AGENTS.md` policies to load practices rather than layout
+skills. Remove retired installed skills in the scope where you installed them; do not
+assume installing the new catalog removes stale copies. Do not load old layout rules
+alongside the revised guidance. This checkout change does not update installations
+in other projects or global skill directories.
 
 ## Agent Loading
 
@@ -78,13 +84,16 @@ not an automatically installed instruction file:
 ```markdown
 ## Engineering Guidance
 
-- Preserve authoritative domain/use-case ownership and inward dependencies.
+- Preserve authoritative domain/use-case ownership, inward dependencies, core-owned
+  technology ports, and traceable workflows. Logical layers do not mandate file trees.
 - Obtain explicit user approval before adding dependencies. Preferred libraries
   are recommendations, not pre-approval.
 - Before substantive domain, integration, or runtime decisions, load
   architecture-guidance. Follow its runtime reference for concurrency/lifecycle work.
-- Before designing, planning, changing, or reviewing code, load the applicable
-  language's source-layout and practices skills.
+- Before substantive design, planning, implementation, or review of code, load the
+  applicable language's practices skill. Read its source-organization reference when
+  designing, changing, or reviewing organization, public APIs, visibility, or
+  module/header/package/build dependency boundaries.
 - For Rust library/facility choices, load rust-ecosystem.
 - Before proposing or adding a new dependency, load dependency-approval.
 - Before researching a dependency's APIs, documentation, or behavior, load
@@ -109,21 +118,27 @@ commits, deployment, dependency additions, or other actions requiring user appro
 
 ## Policy Choices
 
-- Preserve DDD/hexagonal ownership without generating an interface or runtime hop
-  for each logical boundary. Runtime detail remains part of architecture guidance.
-- Mixed-responsibility applications use explicit architectural role directories even
-  when small. A package dedicated to one role treats its root as that boundary and
-  omits redundant paths such as `src/domain/`. Omit empty scaffolding; specialized
-  layouts outside the mixed/focused shapes require explicit approval.
+- Preserve DDD/hexagonal ownership and isolate infrastructure behind core-owned
+  capability contracts, even with one implementation. Concrete internal operations
+  need no corresponding interface. Logical layers do not require runtime hops.
+- Give agents firm boundaries, a default design recipe, a decision table, and paired
+  examples rather than an open-ended instruction to exercise good judgment. Keep
+  orchestration readable and implementation selection discoverable in composition.
+- Start with shallow cohesive modules. Related types, errors, operations, and helpers
+  may share files, including Rust module/library roots. Expand structure for concrete
+  ownership, visibility, semantic, lifecycle, or navigation needs, not a diagram.
+  Example trees are not minimums, and equivalent layouts need no special approval.
+- Identify existing owners precisely; keep greenfield paths provisional unless they
+  are genuine constraints. No speculative file trees, DTO families, or extension points.
 - Refactor ownership necessary for the requested change, not unrelated legacy code.
   Material scope expansion requires approval through the existing process.
 - Rust core independence means no concrete infrastructure coupling, not no supporting
   crates. Approved technology-neutral libraries such as thiserror can be appropriate.
 - Prefer Tokio for needed async execution; evaluate nom and other suitable parsers
   for actual grammar requirements. Ordinary formatting starts with `std::fmt`.
-- C and C++ retain standard-library-only core dependency rules from the stricter
-  layout policy; infrastructure libraries stay behind adapters. C guidance is newly
-  authored and does not pretend C has C++ ownership mechanisms.
+- C and C++ retain their standard-library-only core dependency rules in practices;
+  infrastructure libraries stay behind adapters. C guidance does not pretend C has
+  C++ ownership mechanisms.
 - New dependencies need approval. Routine upgrade approval is left to the consuming
   repository's policy; this catalog does not silently establish a blanket rule.
 - Dependency research uses local source and bundled docs first, reusing a matching
@@ -148,10 +163,13 @@ node --test tests/catalog.test.mjs
 npx skills add . --list
 ```
 
-The tests check this catalog's frontmatter, names, categories, bundled links, and
-named skill references. They are intentionally not a general YAML or Agent Skills
-validator. CLI listing checks actual discovery without installing the catalog.
+The tests check this catalog's frontmatter, names, categories, and links and named
+skill references in skill bodies and bundled Markdown references. They are intentionally
+not a general YAML or Agent Skills validator. CLI listing checks actual discovery
+without installing the catalog.
 
 See [evaluation scenarios](tests/skill-scenarios.md) for behavioral tests of skill
-selection and policy adherence. Structural tests cannot prove an agent will select
-or follow a skill, and these scenarios must be exercised with the target host/model.
+selection and policy adherence, including paired simplicity/boundary cases. Structural
+tests cannot prove an agent will select or follow a skill. Exercise the scenarios with
+the actual target host/model and configuration, including Terra/Luna/Sol where used;
+record loading failures separately from design failures and repeat representative cases.

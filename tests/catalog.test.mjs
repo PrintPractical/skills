@@ -8,9 +8,9 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const catalog = {
   general: ['architecture-guidance', 'dependency-approval', 'dependency-source-research'],
   'spec-driven-development': ['preserve-implementation-intent'],
-  rust: ['rust-source-layout', 'rust-practices', 'rust-ecosystem'],
-  c: ['c-source-layout', 'c-practices'],
-  cpp: ['cpp-source-layout', 'cpp-practices'],
+  rust: ['rust-practices', 'rust-ecosystem'],
+  c: ['c-practices'],
+  cpp: ['cpp-practices'],
 };
 const names = new Set(Object.values(catalog).flat());
 
@@ -21,7 +21,7 @@ test('catalog contains exactly the intended categories and skills', async () => 
     assert.deepEqual((await readdir(path.join(root, 'skills', category))).sort(),
       [...skills].sort());
   }
-  assert.equal(names.size, 11);
+  assert.equal(names.size, 8);
 });
 
 for (const [category, skills] of Object.entries(catalog)) {
@@ -48,17 +48,23 @@ for (const [category, skills] of Object.entries(catalog)) {
       assert.match(text.slice(frontmatter[0].length), /^\n?# /);
       assert.doesNotMatch(text, /[^\x00-\x7f]/, 'use ASCII source text');
 
-      for (const [, target] of text.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
-        assert.ok(!target.includes('://'), 'bundle skill references locally');
-        const resolved = path.resolve(directory, target);
-        assert.ok(resolved.startsWith(directory + path.sep),
-          `reference must stay inside independently installable skill: ${target}`);
-        assert.ok((await stat(resolved)).isFile(), `missing reference: ${target}`);
-      }
-      for (const [, reference] of text.matchAll(
-        /`((?:rust|cpp|c)-[a-z-]+|architecture-guidance|dependency-approval|dependency-source-research)`/g,
-      )) {
-        assert.ok(names.has(reference), `unknown named skill: ${reference}`);
+      for (const file of await readdir(directory, { recursive: true })) {
+        if (!file.endsWith('.md')) continue;
+        const source = path.join(directory, file);
+        const markdown = await readFile(source, 'utf8');
+        assert.doesNotMatch(markdown, /[^\x00-\x7f]/, `use ASCII source text: ${file}`);
+        for (const [, target] of markdown.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
+          assert.ok(!target.includes('://'), 'bundle skill references locally');
+          const resolved = path.resolve(path.dirname(source), target);
+          assert.ok(resolved.startsWith(directory + path.sep),
+            `reference must stay inside independently installable skill: ${file}: ${target}`);
+          assert.ok((await stat(resolved)).isFile(), `missing reference: ${file}: ${target}`);
+        }
+        for (const [, reference] of markdown.matchAll(
+          /`((?:rust|cpp|c)-[a-z-]+|architecture-guidance|dependency-approval|dependency-source-research|preserve-implementation-intent)`/g,
+        )) {
+          assert.ok(names.has(reference), `unknown named skill: ${file}: ${reference}`);
+        }
       }
     });
   }

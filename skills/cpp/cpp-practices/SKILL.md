@@ -1,6 +1,6 @@
 ---
 name: cpp-practices
-description: Use when designing, planning, implementing, or reviewing modern C++ APIs and behavior, especially domain modeling, RAII, ownership, ports, errors, concurrency, dependencies, and tests; favors idiomatic values and meaningful boundaries over mechanical interfaces.
+description: Use for modern C++ design, planning, source organization, implementation, and review, including module/header/build boundaries, APIs, domain modeling, RAII, ownership, ports, errors, concurrency, dependencies, and tests; favors idiomatic values and meaningful boundaries over mechanical interfaces.
 user-invocable: false
 ---
 
@@ -9,12 +9,55 @@ user-invocable: false
 ## Scope and Architecture
 
 - Use modern idiomatic C++ within the repository's supported standard and toolchain.
-- Use `cpp-source-layout` for placement and `architecture-guidance` for shared design
-  decisions when needed. Report a missing needed skill; do not invent its guidance.
-- Domain owns rules and invariants; application owns workflows; adapters own technology.
-- Dependencies point inward; domain and application must not include concrete adapters.
+- Load `architecture-guidance` for shared design principles when assigning owners or
+  boundaries. Report missing needed guidance; do not invent its contents. The C++ core
+  dependency policy below remains stricter than general supporting-library allowances.
+- Domain owns rules, invariants, meaningful state, values, and domain failures. Domain
+  headers and implementations depend only on domain code and the C++ standard library,
+  never application code, adapters, OS APIs, or infrastructure.
+- Application owns workflows, transaction intent, and required port contracts. Use
+  cases and ports depend only on domain code, application contracts, and the C++ standard
+  library; they must not include or construct concrete adapters.
+- Adapters depend inward on core contracts and outward on technology. Inbound adapters
+  decode and validate protocol syntax, invoke use cases, and map results; they do not
+  own domain rules or workflows or bypass them by calling unrelated adapters.
+- Outbound adapters own persistence, serialization, technical retries, SDKs, OS calls,
+  and technology failure translation. Give each integration one authoritative owner;
+  feature slices use shared owners rather than duplicating architecture.
+- The outer composition boundary constructs and injects concrete dependencies and owns
+  startup, resource lifetimes, and shutdown. Keep entry points thin.
 - Keep domain computation synchronous unless its meaning requires asynchrony.
 - These rules constrain code and design, not agent workflow orchestration.
+
+## Source Organization and Planning
+
+- Before designing, changing, or reviewing source organization, headers, public APIs,
+  include visibility, or build/dependency boundaries, read
+  [Source Organization](references/source-organization.md) for C++ arrangements and mechanics.
+- Default to shallow, cohesive modules named for concepts, workflows, or integrations.
+  Architectural roles are ownership and dependency rules, not a mandatory directory
+  tree. Co-locate related types, helpers, and behavior when this keeps the flow readable
+  without mixing technology into core code.
+- No file per owner/class, public header per helper, role directory, or template minimum
+  is required. A focused library can use its root as its boundary. Split files or targets
+  for real cohesion, visibility, or build needs, not to satisfy a diagram. Alternative
+  layouts do not require special approval when they preserve the hard boundaries.
+- In existing code, identify precise owner symbols and paths before changing behavior.
+  For greenfield work, name likely modules, responsibilities, contracts, and dependency
+  constraints; do not freeze speculative paths. Resolve placement as implementation
+  makes it concrete, recording relevant header visibility, build changes, and tests.
+- Make each flow discoverable from entry point through use case, domain decisions,
+  required capabilities, adapter effects, and result/failure mapping. Keep orchestration
+  cohesive rather than scattering each step into a separate class or layer file.
+- Plan and verify behavioral slices through shared owners, not a task per layer. Do not
+  create duplicate DTOs or mappings just to cross a logical boundary.
+- Keep headers self-contained, guarded, and minimal; distinguish installed/public
+  contracts from private cross-translation-unit declarations. Reinforce inward
+  dependencies with build targets and include visibility where practical; directory
+  names alone do not enforce them.
+- Correct ownership issues material to the requested change. Do not automatically
+  reorganize unrelated code; seek approval only if necessary work materially expands
+  scope, not merely because the layout differs from an example.
 
 ## Modeling and APIs
 
@@ -23,7 +66,8 @@ user-invocable: false
 - Use `enum class` and explicit states rather than unrelated booleans or magic integers.
 - Enforce invariants in the type or operation that owns them; avoid duplicated checks
   as the only protection against invalid domain state.
-- Prefer free functions or concrete classes for single-strategy behavior.
+- Prefer free functions or concrete classes for internal single-strategy behavior;
+  technology isolation still requires a port even with one adapter implementation.
 - Use composition over deep inheritance; do not create an abstract class per class.
 - Avoid mechanical `IFoo/Foo/FooImpl` families and speculative extension points.
 - Give every significant rule, mapping, and policy one authoritative implementation.
@@ -65,11 +109,15 @@ existence of a concrete class. This use case does not need its own abstract inte
 
 ## Ports and Composition
 
-- Design narrow capability-oriented ports around application needs, not SDK APIs.
-- Use abstract interfaces when runtime substitution is useful; provide a virtual
-  destructor if an interface supports destruction through a base pointer.
-- Use concrete calls or suitable compile-time techniques when runtime dispatch adds
-  no value; do not introduce templates just to avoid a reasonable virtual call.
+- Design narrow application-owned capability ports around core needs, not SDK APIs.
+  Isolate external technology behind a port even with one implementation; multiple
+  implementations or testing needs are not prerequisites for this boundary.
+- Abstract interfaces can express technology isolation as well as runtime substitution;
+  provide a virtual destructor if destruction through a base pointer is supported.
+- Choose an abstract interface, callable contract, or suitable compile-time technique
+  that preserves inward dependencies without leaking concrete adapter types into core
+  code. Prefer concrete internal calls otherwise; do not introduce templates just to
+  avoid a reasonable virtual call.
 - Inbound adapters may call concrete use cases directly.
 - Inject dependencies explicitly and wire implementations at the outer composition root.
 - Keep service locators, hidden globals, and SDK-specific types out of core contracts.

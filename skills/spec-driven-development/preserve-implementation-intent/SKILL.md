@@ -64,6 +64,14 @@ do not replace them with vague phrases such as "handle errors appropriately."
 Do not pad artifacts with transcripts, exhaustive deliberation, speculative edge
 cases, or invented precision. Record decision summaries and useful rationale.
 
+For architectural plans, load `architecture-guidance` and the applicable language
+practices before assigning owners or boundaries. Preserve the rule owner, workflow,
+technology contracts, dependency direction, and consequential lifecycle decisions.
+Identify existing owners by actual paths/symbols. For new code, likely cohesive
+modules and constraints suffice; do not turn provisional paths into required file
+trees, one artifact per responsibility, or speculative extension points. Preserve
+an exact path when it is an agreed requirement or a real integration constraint.
+
 ## Place Details in OpenSpec Assets
 
 Use the project's actual schema and templates; the following maps responsibilities,

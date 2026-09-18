@@ -1,15 +1,42 @@
 ---
 name: rust-practices
-description: Apply idiomatic Rust modeling, ownership, traits, errors, async execution, and safety when designing, implementing, refactoring, testing, or reviewing Rust code. Use for API and concurrency decisions as well as edits to Rust source.
+description: Apply idiomatic Rust modeling, source organization, ownership, traits, errors, async execution, and safety when designing, planning, implementing, refactoring, testing, or reviewing Rust code. Use before choosing crate/module boundaries, visibility, APIs, or concurrency mechanisms as well as edits to Rust source.
 user-invocable: false
 ---
 
 # Rust Practices
 
 Load `architecture-guidance` for ownership and runtime boundaries,
-`rust-source-layout` for paths, and `rust-ecosystem` when selecting library facilities.
+and `rust-ecosystem` when selecting library facilities.
 Load `dependency-approval` before adding a dependency. If required guidance is
 unavailable, report the gap before making the affected decision.
+
+## Source Organization and Boundaries
+
+- Before designing, changing, or reviewing source organization, module/crate
+  dependencies, visibility, or public APIs, read
+  [Source Organization](references/source-organization.md) for examples and mechanics.
+- Default to shallow cohesive modules. Keep related types, errors, operations, and
+  private helpers together. An owner need not have its own file, trait, or wrapper.
+  Cohesive behavior may live in `lib.rs` or a leaf `mod.rs`; filenames do not force
+  declaration-only roots. Keep composition focused on wiring and lifecycle.
+- Domain depends on domain code, the standard library, and approved technology-neutral
+  supporting crates, not application, adapters, runtime/OS integration, telemetry SDKs,
+  or external representation details. Application depends on domain and its own
+  contracts, not concrete adapters. Adapters depend inward; composition wires them.
+- Define application-owned traits for required infrastructure capabilities, even with
+  one implementation. Use core-owned types and meaningful failures, not SDK APIs.
+  Static dispatch can preserve this boundary; a port does not require `dyn`, a task,
+  serialization, or another internal DTO.
+- Use private modules and `pub(crate)` deliberately. Public APIs and Cargo dependencies
+  must preserve the same direction; a flat tree does not permit infrastructure leaks.
+- Identify actual symbols and paths in existing code. For greenfield plans, name likely
+  cohesive modules and dependency constraints without freezing every future source path.
+  Split for meaningful ownership, visibility, independent change, or navigation needs,
+  not a layer diagram. Do not reorganize unrelated code or create empty future layers.
+- Keep application flows readable through explicit domain operations and port calls.
+  Related input/result types and helpers may stay beside the workflow. Ordinary layout
+  choices preserving the boundaries need no special approval; scope expansion still does.
 
 ## Modeling and APIs
 
@@ -21,6 +48,8 @@ unavailable, report the gap before making the affected decision.
   require a trait; avoid mechanical Foo/FooTrait/FooImpl families.
 - Traits suit meaningful ports and interchangeable strategies. Shape contracts around
   capability needs, not a concrete SDK API. Keep adapter-specific types out of them.
+  Technology isolation is sufficient reason for a single-implementation port; a
+  concrete internal operation does not need the same abstraction.
 - Prefer static dispatch where practical; use trait objects for genuine runtime
   polymorphism or other demonstrated boundary needs. Neither is a universal rule.
 - Inject dependencies through constructors/parameters, rather than global lookup.

@@ -1,6 +1,6 @@
 ---
 name: c-practices
-description: Use when designing, planning, implementing, or reviewing C APIs and behavior, especially ownership, lifetime, cleanup, errors, bounds safety, ports, concurrency, dependencies, and tests; applies idiomatic C rather than C++ patterns.
+description: Use for C design, planning, source organization, implementation, and review, including module/header/build boundaries, APIs, ownership, lifetime, cleanup, errors, bounds safety, ports, concurrency, dependencies, and tests; applies idiomatic C rather than C++ patterns.
 user-invocable: false
 ---
 
@@ -10,11 +10,55 @@ user-invocable: false
 
 - Write idiomatic C for the repository's supported C standard and target platforms.
 - These are C-specific rules, not C++ RAII, templates, or class patterns in disguise.
-- Use `c-source-layout` for placement and `architecture-guidance` for shared design
-  decisions when needed. Report a missing needed skill; do not invent its guidance.
-- Keep domain rules authoritative and infrastructure-free; use cases own workflows,
-  adapters own technology, and the outer composition boundary wires dependencies.
+- Load `architecture-guidance` for shared design principles when assigning owners or
+  boundaries. Report missing needed guidance; do not invent its contents. The C core
+  dependency policy below remains stricter than general supporting-library allowances.
+- Domain owns rules, invariants, meaningful state, and domain errors. Domain headers
+  and implementations depend only on domain code and the C standard library, never
+  application code, adapters, OS APIs, or infrastructure.
+- Application owns workflows, transaction intent, and required port contracts. Use
+  cases and ports depend only on domain code, application contracts, and the C standard
+  library; they must not include or construct concrete adapters.
+- Adapters depend inward on core contracts and outward on technology. Inbound adapters
+  decode and validate protocol syntax, invoke use cases, and map results; they do not
+  own domain rules or workflows or bypass them by calling unrelated adapters.
+- Outbound adapters own persistence, serialization, technical retries, OS calls, SDKs,
+  and technology error translation. Give each rule, mapping, and integration one
+  authoritative owner rather than duplicating it across feature slices.
+- The outer composition boundary constructs and injects concrete dependencies and owns
+  startup, resource lifetimes, and shutdown. Keep entry points thin.
 - These rules constrain code and design, not agent workflow orchestration.
+
+## Source Organization and Planning
+
+- Before designing, changing, or reviewing source organization, headers, public APIs,
+  include visibility, or build/dependency boundaries, read
+  [Source Organization](references/source-organization.md) for C arrangements and mechanics.
+- Default to shallow, cohesive modules named for concepts, workflows, or integrations.
+  Architectural roles are ownership and dependency rules, not a mandatory directory
+  tree. Co-locate closely related declarations, helpers, and behavior when this keeps
+  the flow readable without mixing technology into core code.
+- No file per owner, public header per helper, role directory, or template minimum is
+  required. A focused library can use its root as its boundary. Split files or targets
+  for real cohesion, visibility, or build needs, not to satisfy a diagram. Alternative
+  layouts do not require special approval when they preserve the hard boundaries.
+- In existing code, identify precise owner symbols and paths before changing behavior.
+  For greenfield work, name likely modules, responsibilities, contracts, and dependency
+  constraints; do not freeze speculative paths. Resolve placement as implementation
+  makes it concrete, recording relevant header visibility, build changes, and tests.
+- Make each flow discoverable from entry point through use case, domain decisions,
+  required capabilities, adapter effects, and result/error mapping. Keep orchestration
+  cohesive rather than scattering each step into a separate helper or layer file.
+- Plan and verify behavioral slices through shared owners, not a task per layer. Do
+  not create duplicate DTOs or mappings just to cross a logical boundary; separate
+  representations when semantics differ and keep external formats out of core types.
+- Keep headers self-contained, guarded, and minimal; distinguish installed/public
+  contracts from private cross-translation-unit declarations. Reinforce inward
+  dependencies with build targets and include visibility where practical; directory
+  names alone do not enforce them.
+- Correct ownership issues material to the requested change. Do not automatically
+  reorganize unrelated code; seek approval only if necessary work materially expands
+  scope, not merely because the layout differs from an example.
 
 ## Modeling and APIs
 
@@ -78,14 +122,18 @@ void reservation_store_destroy(reservation_store *store);
 
 ## Ports and Runtime
 
-- Use narrow capability contracts only where isolation or substitution is meaningful.
+- Use narrow application-owned capability ports to isolate external technology, even
+  with one implementation. Shape contracts around core needs, not an SDK's API.
 - A callback plus context, or a small operation table, can implement an outbound port.
   Document context lifetime, callback failure, reentrancy, and thread-safety rules.
-- Prefer direct function calls otherwise; do not create an interface for every module.
-- Inject dependencies explicitly; keep SDK types, hidden globals, and concrete adapter
-  construction out of domain and application code.
+- A technology-neutral function contract with an adapter implementation can also be
+  a port. Prefer concrete internal functions otherwise; inbound adapters may call
+  concrete use cases directly. Do not create an interface for every module.
+- Inject dependencies explicitly; keep SDK types, service locators, hidden globals,
+  and concrete adapter construction out of domain and application code.
 - Keep domain computation synchronous unless its meaning requires otherwise.
 - Give mutable runtime resources clear owners; use threads/queues only for real need.
+- A logical layer does not require a task, thread, queue, process, or runtime hop.
 - Define lock order and minimize lock scope; `volatile` is not synchronization.
 - Shutdown must stop new work, signal cancellation, unblock waits, join workers,
   and release resources only after users and callbacks can no longer access them.

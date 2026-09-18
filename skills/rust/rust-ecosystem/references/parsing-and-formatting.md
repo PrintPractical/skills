@@ -28,6 +28,11 @@ operates on text. Keep parsing, name resolution, and semantic validation separat
 owned when they are independently meaningful; syntax acceptance is not validation
 of every domain invariant.
 
+Separate ownership does not require separate files, traits, intermediate DTOs, or
+runtime stages. A small language implementation may keep these operations together
+and call them directly while preserving their distinct semantics and failure checks.
+Extract modules when independent APIs, dependencies, or navigation justify them.
+
 ## Formatting
 
 - Prefer `std::fmt`, `Display`, `write!`, and `format!` for ordinary textual output.

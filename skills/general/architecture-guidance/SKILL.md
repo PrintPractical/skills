@@ -1,6 +1,6 @@
 ---
 name: architecture-guidance
-description: Apply DDD and hexagonal architecture when designing, planning, implementing, refactoring, or reviewing domain behavior, application workflows, integrations, or runtime resource ownership. Use before assigning owners, defining ports, or introducing tasks, channels, actors, and lifecycle boundaries.
+description: Apply pragmatic DDD and hexagonal architecture when designing, planning, implementing, refactoring, or reviewing domain behavior, application workflows, integrations, or runtime ownership. Use before assigning owners, choosing module boundaries, defining ports, or introducing tasks and channels; preserve technology isolation and traceable flows without speculative structure.
 user-invocable: false
 ---
 
@@ -8,37 +8,109 @@ user-invocable: false
 
 ## Priorities
 
-Apply in order: correct ownership of domain rules and invariants; explicit use-case
-boundaries; inward dependencies; cohesive concepts; one authoritative implementation;
-clear infrastructure/runtime ownership; simplicity within those boundaries; and
-efficiency where the workload makes it meaningful.
+Preserve authoritative ownership, inward dependencies, explicit resource lifecycles,
+and traceable workflows using the least structural machinery that makes them clear.
+DDD building blocks are tools, not a checklist. A responsibility does not imply its
+own directory, file, type, interface, representation, or runtime hop. Small size does
+not excuse infrastructure coupling or misplaced rules; large size does not justify
+forwarding layers without behavior.
 
-Prefer the smallest implementation preserving these priorities. Do not simplify
-locally by collapsing responsibilities with distinct architectural meaning.
-DDD building blocks are tools, not a checklist. Logical boundaries do not require
-interfaces, processes, tasks, channels, or extra runtime hops.
-
-Load the applicable language layout and practices skills before committing to
-language-specific paths or implementation decisions. Load `dependency-approval`
+Load the applicable language practices skill before committing to language-specific
+organization or implementation decisions. Load `dependency-approval`
 before selecting a new dependency. If required guidance is unavailable, report the
 gap before making the affected decision; do not invent its policy.
 
 For concurrency, lifecycle, stateful resources, state machines, or hot-path changes,
 read [Runtime Ownership](references/runtime.md) before designing or changing them.
 
-## Assign Owners Before Implementation
+## Hard Boundaries
+
+- Domain concepts own rules and invariants, not transport handlers, persistence
+  implementations, or composition. Give each rule and mapping one authoritative owner.
+- Domain code does not import application, concrete infrastructure, external formats,
+  OS integration, runtime mechanisms, or telemetry SDKs.
+- Application owns workflows and accesses infrastructure through application-owned
+  capability contracts expressed in core terms, not concrete adapter or SDK APIs.
+- Adapters depend inward and translate technology-specific representations and
+  failures where semantics differ. They do not own domain rules or application flows.
+- Composition selects, constructs, and injects concrete implementations. Long-lived
+  resources and tasks have explicit owners, failure handling, and shutdown behavior.
+
+A technology-isolating port is justified even with one implementation. This is not
+permission to add an interface for every internal function or use case. Language
+practices specify allowed supporting libraries and mechanisms for these boundaries.
+
+## Default Design Recipe
 
 1. Inspect existing behavior and the repository's concepts and boundaries.
-2. Identify the independently meaningful owner of each significant rule, invariant,
-   workflow, policy, mapping, external capability, and integration responsibility.
-3. Reuse an existing authoritative owner when correct; extend or refactor it when
-   the requested behavior changes its responsibility.
-4. Name concrete owner paths in the existing design/plan. Apply required language
-   layouts, rather than creating a private architecture for every vertical slice.
-5. Identify boundary contracts, failure semantics, and relevant behavioral checks.
+2. Reuse the existing cohesive owner when correct. Otherwise name the domain concept
+   that owns the new rules and invariants; keep related behavior and values together.
+3. Keep orchestration in a readable application operation. Make ordering, domain
+   decisions, external effects, transaction intent, and failure paths discoverable.
+4. Define only the external capabilities the workflow needs, using core-owned types
+   and failure semantics. Implement them in technology-specific adapters.
+5. Wire concrete implementations in composition; name resource and lifecycle owners.
+6. Start with shallow cohesive modules. Split only for a concrete ownership,
+   visibility, technology, or navigation need; use the decision table below.
+7. Identify behavioral checks for rules, workflows, boundary translations, and any
+   lifecycle guarantees affected by the change.
+
+Stop when the required behavior and boundaries are covered. Do not invent missing
+responsibilities to complete the recipe: a pure library needs no application layer
+or ports, and a use case needs no forwarding handler solely to look layered. An
+inbound adapter can call a pure domain operation directly when no application
+workflow is needed; do not use this exception to hide orchestration in the adapter.
+
+For existing code, identify actual owner symbols and paths. For greenfield work,
+name likely cohesive modules, responsibilities, and dependency constraints without
+freezing speculative submodule paths. An owner can be a function or type within a
+module, not necessarily a separate file. Record consequential choices in the
+existing plan/design; small changes do not require a new architecture document.
 
 Semantic duplication is duplication even when the syntax differs. Shared behavior
 belongs with its concept or boundary, not an indiscriminate helper/common module.
+
+## Defaults and Exceptions
+
+| Decision | Default | Add structure when |
+| --- | --- | --- |
+| File or module | Extend the existing cohesive owner; otherwise start shallow | Independent change, ownership, visibility, or actual navigation difficulty warrants separation |
+| Trait or interface | Use concrete internal functions and types | Isolating infrastructure or expressing a meaningful interchangeable policy |
+| Data representation | Reuse core-owned types across matching internal semantics | Meaning, validation, trust, persistence, or schema evolution differs |
+| Task or channel | Make direct synchronous or async calls | Concurrency, resource ownership, isolation, or backpressure needs an execution boundary |
+| Wrapper | Call the meaningful operation directly | The wrapper owns real policy, translation, or lifecycle behavior |
+| Package or crate | Keep existing package boundaries | Dependency enforcement, cohesive reuse, or build requirements justify extraction |
+
+State the concrete need for the mechanism being added. A task's concurrency need
+does not justify a command bus or DTO family. Hypothetical future integrations and
+test mocking alone are not reasons to add abstractions. No fixed file-size or
+file-count threshold replaces a cohesion decision.
+
+## Traceable Flows
+
+Keep the important workflow visible in one application operation, calling meaningful
+domain operations and ports rather than chains of pass-through services. Use names
+that describe behavior, not just pattern roles. Co-locate related inputs, results,
+errors, and private helpers instead of making a directory for every kind of type.
+
+A reader must be able to locate entry -> workflow -> domain decisions and external
+effects, follow result/failure handling, and find implementation selection in
+composition. This is a navigation check, not a required linear execution order.
+Use explicit calls and injection by default, not hidden registries or implicit
+dispatch. Necessary asynchronous boundaries must expose how work and failures flow.
+
+- **Useful boundary:** `reserve_seat` checks a domain invariant and persists through
+  a core-owned `ReservationStore`; composition injects its SQLite implementation.
+  The port protects the application even if SQLite is the only implementation.
+- **Unnecessary chain:** handler -> service -> use-case wrapper -> repository wrapper
+  where intermediate components only forward. Remove redundant steps, not the port
+  that keeps SQLite types and errors out of the application.
+- **Cohesive module:** configuration values, errors, and resolution operations can
+  share a module. Split resolution when it gains an independent API or makes that
+  module difficult to navigate, not because a diagram names it separately.
+- **Necessary separation:** protocol decoding and domain validation have different
+  owners. Keep transport dependencies out of domain behavior even in a small CLI;
+  shallow modules suffice without nested layer directories.
 
 ## Core and Boundaries
 
@@ -82,6 +154,8 @@ hidden dependency lookup, and implicit runtime dependencies.
   unrepresentable where practical. Related data alone does not justify an aggregate.
 - Domain policies/services suit rules that span concepts without a natural entity
   owner. Do not add an interface for a single strategy without a meaningful need.
+- A port isolates technology even with one implementation. Internal policies need
+  no interface just because an infrastructure port uses one. Do not mirror SDK APIs.
 - Keep domain computation synchronous unless asynchrony is intrinsically meaningful
   to the domain. Pass information into domain operations, not infrastructure access.
 - Use explicit inbound interfaces when multiple adapters, stable contracts, or useful
@@ -90,7 +164,8 @@ hidden dependency lookup, and implicit runtime dependencies.
   buses, handlers, or CQRS machinery for ordinary operations.
 - Keep representations distinct when semantics differ. Map explicitly at meaningful
   boundaries, with one mapping owner. Neither turn domain types into external DTOs
-  for convenience nor duplicate representations without value.
+  for convenience nor duplicate representations without value. Matching fields do
+  not prove matching semantics; external schemas can need independent evolution.
 - Domain errors express domain failures; application errors express use-case
   failures; adapters translate technology errors before crossing core contracts.
   Preserve actionable meaning, and represent expected production failures explicitly.
@@ -99,10 +174,16 @@ hidden dependency lookup, and implicit runtime dependencies.
 ## Cohesion and Cleanup Scope
 
 Organize around concepts, use cases, and cohesive integration responsibilities.
-Layers are boundaries/namespaces, not dumping grounds. Keep entry points and namespace
-files thin. Avoid generic services/models/utils/managers containing independently
-describable responsibilities. Use concrete internal types where polymorphism adds
-no value, and do not force patterns that are unidiomatic for the language.
+Keep composition entry points focused on wiring and lifecycle. A namespace aggregator
+should focus on aggregation, but a module or library root may own cohesive behavior.
+Do not split code solely because of its filename. Avoid generic services/models/utils
+containers of unrelated behavior. Several related owners can share a file without
+mixing their dependencies or meaning.
+
+Use shallow modules by default. Group by capability or role as the implementation
+grows, preserving shared authoritative owners and inward dependencies. Examples are
+not templates or minimum trees. Equivalent physical arrangements do not need special
+approval; this does not authorize relaxing hard boundaries or project requirements.
 
 Refactor ownership when necessary for the requested behavior, dependency direction,
 or reuse of the authoritative implementation. Include affected paths in the plan.
@@ -128,16 +209,26 @@ concerns as a blanket justification for reimplementation.
 
 ## Verification
 
+For substantial changes, briefly identify the actual rule owner, workflow entry,
+technology contracts, composition wiring, and the concrete need for new abstractions
+or execution boundaries. Cite symbols/locations, not just "clean architecture."
+Use the existing review or completion format, not a separate required artifact.
+
 - Test domain rules and invalid states directly without infrastructure where practical.
 - Test use cases through their application-facing APIs, using lightweight fakes where
   useful. Do not create abstractions solely to enable mocking.
 - Test adapter mapping, failure translation, and real technology integration.
 - Prefer behavioral assertions over tests coupled to private implementation structure.
 - Check that new owners, contracts, and imports preserve dependency direction.
+- Trace one representative success and relevant failure path. Check that meaningful
+  orchestration is visible and implementation selection can be found in composition.
 - Review equivalent rules/mappings for semantic duplication, not just matching text.
 - Investigate entry points gaining behavior, generic modules growing responsibilities,
   mirror-image interfaces, concrete adapter construction in core code, and technical
-  details shaping domain models. These are review signals, not mechanical failures.
+  details shaping domain models. Also check forwarding chains, trivial file-per-step
+  splits, duplicate internal DTOs, and tasks used only to cross layers. These are
+  review signals, not mechanical failures; a single-implementation port is not a smell
+  when it protects a technology boundary.
 
 Use the project's existing test/review workflow. Report actual evidence and remaining
 gaps; this skill does not create a separate approval or lifecycle process.
